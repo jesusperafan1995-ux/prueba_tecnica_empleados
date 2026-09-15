@@ -64,32 +64,32 @@ Cada empleado contiene los siguientes campos:
 
 ## Instalación
 
-### 1. Clonar el repositorio
+1. Clonar el repositorio
 
-'''bash
-git clone URL_DEL_REPOSITORIO
+bash
+git clone https://github.com/jesusperafan1995-ux/prueba_tecnica_empleados
 cd prueba_tecnica
-'''
 
-### 2. Crear el entorno virtual
+
+2. Crear el entorno virtual
 
 En Windows:
 
-'''bash
+bash
 python -m venv venv
-'''
+
 
 Activar el entorno virtual:
 
-'''bash
+bash
 venv\Scripts\activate
-'''
 
-### 3. Instalar las dependencias
 
-'''bash
+3. Instalar las dependencias
+
+bash
 python -m pip install -r requirements.txt
-'''
+
 
 ### 4. Configurar las variables de entorno
 
@@ -97,69 +97,64 @@ Crear un archivo '.env' en la raíz del proyecto tomando como referencia '.env.e
 
 El archivo '.env' debe contener:
 
-'''text
+text
 DB_NAME=empleados_db
 DB_USER=root
 DB_PASSWORD=TU_CONTRASEÑA
 DB_HOST=localhost
 DB_PORT=3306
-'''
 
-> El archivo '.env' contiene información sensible y no debe ser incluido en el repositorio.
-
-### 5. Crear la base de datos
+5. Crear la base de datos
 
 Ingresar a MySQL y ejecutar:
 
-'''sql
+sql
 CREATE DATABASE empleados_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
-'''
 
-### 6. Ejecutar las migraciones
+
+6. Ejecutar las migraciones
 
 Desde la carpeta raíz del proyecto:
 
-'''bash
+bash
 python manage.py migrate
-'''
+
 
 Esto creará las tablas necesarias para la aplicación.
 
-### 7. Crear un usuario administrador
+7. Crear un usuario administrador
 
 Para acceder al panel administrativo de Django:
 
-'''bash
+bash
 python manage.py createsuperuser
-'''
 
-Seguir las instrucciones mostradas en la consola.
 
-### 8. Ejecutar el servidor
+8. Ejecutar el servidor
 
-'''bash
+bash
 python manage.py runserver
-'''
+
 
 La aplicación estará disponible en:
 
-'''text
+text
 http://127.0.0.1:8000/
-'''
+
 
 El listado de empleados estará disponible en:
 
-'''text
+text
 http://127.0.0.1:8000/empleados/
-'''
+
 
 El panel administrativo estará disponible en:
 
-'''text
+text
 http://127.0.0.1:8000/admin/
-'''
+
 
 ## API
 
@@ -167,65 +162,64 @@ La aplicación cuenta con endpoints REST que utilizan JSON para la comunicación
 
 ### Listar empleados
 
-'''http
+http
 GET /api/empleados/
-'''
+
 
 Ejemplo de respuesta:
 
-'''json
+json
 [
     {
-        "id": 1,
-        "nombre": "Juan",
-        "apellido": "Pérez",
-        "documento": "123456789",
-        "correo": "juan@example.com",
-        "telefono": "3001234567"
+      	"nombre": "Yerson",
+    	"apellido": "Perafan",
+    	"documento": "1061763602",
+    	"correo": "yperafan993@gmail.com",
+    	"telefono": "3124456789"
     }
 ]
-'''
+
 
 ### Consultar detalle
 
-'''http
+http
 GET /api/empleados/1/
-'''
+
 
 Ejemplo de respuesta:
 
-'''json
+json
 {
     "id": 1,
-    "nombre": "Juan",
-    "apellido": "Pérez",
-    "documento": "123456789",
-    "correo": "juan@example.com",
-    "telefono": "3001234567"
+    "nombre": "Yerson",
+    "apellido": "Perafan",
+    "documento": "1061763602",
+    "correo": "yperafan993@gmail.com",
+    "telefono": "3124456789"
 }
-'''
+
 
 ### Crear empleado
 
-'''http
+http
 POST /api/empleados/crear/
-'''
+
 
 Ejemplo de solicitud:
 
-'''json
+json
 {
-    "nombre": "Carlos",
-    "apellido": "Ramírez",
-    "documento": "123456789",
-    "correo": "carlos@example.com",
-    "telefono": "3001234567"
+    "nombre": "Yerson",
+    "apellido": "Perafan",
+    "documento": "1061763602",
+    "correo": "yperafan993@gmail.com",
+    "telefono": "3124456789"
 }
-'''
+
 
 ## Estructura del proyecto
 
-'''text
+text
 prueba_tecnica/
 │
 ├── empleados/
@@ -253,13 +247,11 @@ prueba_tecnica/
 ├── .env.example
 ├── .gitignore
 └── README.md
-'''
+
 
 ## Configuración de seguridad
 
 Las credenciales de conexión a MySQL se gestionan mediante variables de entorno.
-
-El archivo '.env' está excluido del control de versiones mediante '.gitignore', evitando publicar credenciales sensibles en el repositorio.
 
 ## Notas
 
