@@ -419,7 +419,7 @@ async function guardarEdicion() {
 
 async function abrirModalVer(id) {
 
-    
+    try {
 
         const response = await fetch(
             `/api/empleados/${id}/`
