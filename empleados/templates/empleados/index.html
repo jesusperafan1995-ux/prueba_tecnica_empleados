@@ -13,18 +13,38 @@
 </head>
 
 <body>
-
 <div class="container py-5">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Gestión de Empleados</h1>
+        <h1>Gestión de empleados</h1>
 
-        <a href="/empleados/crear/" class="btn btn-primary">
-            + Nuevo empleado
-        </a>
+        <div>
+            <button
+                type="button"
+                class="btn btn-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalCrearEmpleado">
+                + Nuevo empleado
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-danger"
+                onclick="cerrarSesion()">
+                Cerrar sesión
+            </button>
+        </div>
     </div>
 
     <div id="mensaje"></div>
+
+    <div class="input-group mb-3">
+        <input
+            type="text"
+            id="buscar"
+            class="form-control"
+            placeholder="Buscar por nombre, apellido, documento, correo o teléfono">
+    </div>
 
     <div class="card shadow-sm">
         <div class="card-body">
@@ -35,89 +55,116 @@
 
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Nombre</th>
-                            <th>Documento</th>
+                            <th>Apellido</th>
+                            <th>DNI</th>
                             <th>Correo</th>
                             <th>Teléfono</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
 
-                    <tbody id="empleados-body">
+                    <tbody id="tabla-empleados">
                     </tbody>
 
                 </table>
-
+                <div id="paginacion" class="mt-3"></div>
             </div>
-
+            
         </div>
     </div>
+    
 
 </div>
 
 
 <script>
 
-async function cargarEmpleados() {
+let busquedaActual = "";
 
-    const tbody = document.getElementById("empleados-body");
+async function cargarEmpleados(buscar = "", pagina = 1) {
+
+    const tbody = document.getElementById("tabla-empleados");
     const mensaje = document.getElementById("mensaje");
+    const paginacion = document.getElementById("paginacion");
+    
 
     try {
 
-        const response = await fetch("/api/empleados/");
+        let url = `/api/empleados/?pagina=${pagina}`;
+
+        if (buscar.trim() !== "") {
+            url += `&buscar=${encodeURIComponent(buscar)}`;
+        }
+
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error("No se pudieron cargar los empleados.");
         }
 
-        const empleados = await response.json();
+        const resultado = await response.json();
+        //console.log(resultado);
+        const empleados = resultado.empleados;
 
         if (empleados.length === 0) {
 
             tbody.innerHTML = `
                 <tr>
                     <td colspan="5" class="text-center">
-                        No hay empleados registrados.
+                        No se encontraron empleados.
                     </td>
                 </tr>
             `;
+            paginacion.innerHTML = "";
 
             return;
         }
 
-        tbody.innerHTML = empleados.map(empleado => `
+        tbody.innerHTML = "";
 
-            <tr>
+        resultado.empleados.forEach(empleado => {
 
+            tbody.innerHTML += `
+                <tr>
+                <td>${empleado.id}</td>
+                <td>${empleado.nombre}</td>
+                <td>${empleado.apellido}</td>
+                <td>${empleado.documento}</td>
+                <td>${empleado.correo}</td>
+                <td>${empleado.telefono}</td>
                 <td>
-                    ${empleado.nombre} ${empleado.apellido}
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        onclick="abrirModalVer(${empleado.id})">
+                        Ver
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-warning"
+                        onclick="abrirModalEditar(${empleado.id})">
+                        Editar
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-danger"
+                        onclick="eliminarEmpleado(${empleado.id})">
+                        Eliminar
+                    </button>
                 </td>
-
-                <td>
-                    ${empleado.documento}
-                </td>
-
-                <td>
-                    ${empleado.correo}
-                </td>
-
-                <td>
-                    ${empleado.telefono}
-                </td>
-
-                <td>
-                    <a
-                        href="/empleados/${empleado.id}/"
-                        class="btn btn-sm btn-outline-primary"
-                    >
-                        Ver detalle
-                    </a>
-                </td>
-
             </tr>
+        `;
+        });
 
-        `).join("");
+        crearPaginacion(
+            resultado.pagina_actual,
+            resultado.total_paginas,
+            resultado.tiene_anterior,
+            resultado.tiene_siguiente,
+            buscar  
+        );
 
     } catch (error) {
 
@@ -126,13 +173,530 @@ async function cargarEmpleados() {
                 ${error.message}
             </div>
         `;
-
     }
 }
 
+document.getElementById("buscar").addEventListener("input", function () {
+
+    const busquedaActual = this.value;
+
+    cargarEmpleados(busquedaActual, 1);
+
+ });
+
+
+function crearPaginacion(
+    paginaActual,
+    totalPaginas,
+    tieneAnterior,
+    tieneSiguiente,
+    buscar
+) {
+
+    const paginacion = document.getElementById("paginacion");
+
+    let html = `
+        <div class="d-flex justify-content-center">
+            <div class="btn-group">
+    `;
+
+    // Botón anterior
+    if (tieneAnterior) {
+
+        html += `
+            <button
+                class="btn btn-outline-primary"
+                onclick="cargarEmpleados('${buscar}', ${paginaActual - 1})"
+            >
+                ← Anterior
+            </button>
+        `;
+    }
+
+    // Números de página
+    for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+
+        if (pagina === paginaActual) {
+
+            html += `
+                <button
+                    class="btn btn-primary"
+                    onclick="cargarEmpleados('${buscar}', ${pagina})"
+                >
+                    ${pagina}
+                </button>
+            `;
+
+        } else {
+
+            html += `
+                <button
+                    class="btn btn-outline-primary"
+                    onclick="cargarEmpleados('${buscar}', ${pagina})"
+                >
+                    ${pagina}
+                </button>
+            `;
+        }
+    }
+
+    // Botón siguiente
+    if (tieneSiguiente) {
+
+        html += `
+            <button
+                class="btn btn-outline-primary"
+                onclick="cargarEmpleados('${buscar}', ${paginaActual + 1})"
+            >
+                Siguiente →
+            </button>
+        `;
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    paginacion.innerHTML = html;
+}
+
+
 cargarEmpleados();
+
+async function cerrarSesion() {
+    const response = await fetch("/api/empleados/logout/", {
+        method: "POST",
+    });
+
+    if (response.ok) {
+        window.location.href = "/empleados/login/";
+    }
+}
+
+async function eliminarEmpleado(id){   
+    const confirmar = confirm("¿Estás seguro de que deseas eliminar este empleado?");
+
+    if (!confirmar) {
+        return;
+    }
+
+    const response = await fetch(`/api/empleados/${id}/`, {
+        method: "DELETE",
+    });
+
+    if (!response.ok) {
+        alert("No fue posible eliminar el empleado.");
+        return;
+    }
+  
+    alert("Empleado eliminado correctamente.");
+
+    location.reload();
+    
+}
+
+//modal crear empleado
+
+async function crearEmpleado() {
+    const datos = {
+        nombre: document.getElementById("crear_nombre").value,
+        apellido: document.getElementById("crear_apellido").value,
+        documento: document.getElementById("crear_documento").value,
+        correo: document.getElementById("crear_correo").value,
+        telefono: document.getElementById("crear_telefono").value
+    }
+
+    const response = await fetch("/api/empleados/crear/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(datos)
+    });
+
+    const resultado = await response.json();
+
+    if(!response.ok) {
+        alert(
+            resultado.error || "No se pudo crear el empleado."
+        );
+        return;
+    }
+
+    alert("Empleado creado correctamente.");
+
+    const modalElement = document.getElementById("modalCrearEmpleado");
+
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    
+    modal.hide();
+
+    document.getElementById("modalCrearEmpleado").reset();
+
+    cargarEmpleados();
+
+}
+
+async function abrirModalEditar(id) {
+
+    const response = await fetch(
+        `/api/empleados/${id}/`
+    );
+
+    if (!response.ok) {
+        alert("No fue posible obtener el empleado.");
+        return;
+    }
+
+    const empleado = await response.json();
+
+    document.getElementById("editar_nombre").value = empleado.nombre;
+    document.getElementById("editar_apellido").value = empleado.apellido;
+    document.getElementById("editar_documento").value = empleado.documento;
+    document.getElementById("editar_correo").value = empleado.correo;
+    document.getElementById("editar_telefono").value = empleado.telefono;
+
+    document.getElementById("formEditarEmpleado").dataset.id = id;
+
+    const modal = new bootstrap.Modal(
+        document.getElementById("modalEditarEmpleado")
+    );
+
+    modal.show();
+}
+
+async function guardarEdicion() {
+
+    const form =
+        document.getElementById("formEditarEmpleado");
+
+    const id = form.dataset.id;
+
+    const datos = {
+        nombre: document.getElementById("editar_nombre").value,
+        apellido: document.getElementById("editar_apellido").value,
+        documento: document.getElementById("editar_documento").value,
+        correo: document.getElementById("editar_correo").value,
+        telefono: document.getElementById("editar_telefono").value
+    };
+
+    const response = await fetch(
+        `/api/empleados/${id}/`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        }
+    );
+
+    const resultado = await response.json();
+
+    if (!response.ok) {
+        alert(
+            resultado.error ||
+            "No fue posible actualizar el empleado."
+        );
+        return;
+    }
+
+    const modalElement =
+        document.getElementById("modalEditarEmpleado");
+
+    const modal =
+        bootstrap.Modal.getInstance(modalElement);
+
+    modal.hide();
+
+    form.reset();
+
+    alert("Empleado actualizado correctamente.");
+
+    cargarEmpleados();
+}
+
+async function abrirModalVer(id) {
+
+    
+
+        const response = await fetch(
+            `/api/empleados/${id}/`
+        );
+
+        if (!response.ok) {
+            throw new Error("No fue posible obtener el empleado.");
+        }
+
+        const empleado = await response.json();
+
+        document.getElementById("ver_id").textContent = empleado.id;
+        document.getElementById("ver_nombre").textContent = empleado.nombre;
+        document.getElementById("ver_apellido").textContent = empleado.apellido;
+        document.getElementById("ver_documento").textContent = empleado.documento;
+        document.getElementById("ver_correo").textContent = empleado.correo;
+        document.getElementById("ver_telefono").textContent = empleado.telefono;
+
+        const modal = new bootstrap.Modal(
+            document.getElementById("modalVerEmpleado")
+        );
+
+        modal.show();
+
+    } catch (error) {
+        alert(error.message);
+    }
+
 
 </script>
 
+
+<!-- Modal ver empleado -->
+<div
+    class="modal fade"
+    id="modalVerEmpleado"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Información del empleado
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <p><strong>ID:</strong> <span id="ver_id"></span></p>
+                <p><strong>Nombre:</strong> <span id="ver_nombre"></span></p>
+                <p><strong>Apellido:</strong> <span id="ver_apellido"></span></p>
+                <p><strong>Documento:</strong> <span id="ver_documento"></span></p>
+                <p><strong>Correo:</strong> <span id="ver_correo"></span></p>
+                <p><strong>Teléfono:</strong> <span id="ver_telefono"></span></p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal crear empleado -->
+<div
+    class="modal fade"
+    id="modalCrearEmpleado"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Nuevo empleado
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formCrearEmpleado">
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input
+                            type="text"
+                            id="crear_nombre"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Apellido</label>
+                        <input
+                            type="text"
+                            id="crear_apellido"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Documento</label>
+                        <input
+                            type="text"
+                            id="crear_documento"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Correo</label>
+                        <input
+                            type="email"
+                            id="crear_correo"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input
+                            type="text"
+                            id="crear_telefono"
+                            class="form-control"
+                            required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    onclick="crearEmpleado()">
+                    Guardar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal editar empleado -->
+<div
+    class="modal fade"
+    id="modalEditarEmpleado"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Editar empleado
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="formEditarEmpleado">
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input
+                            type="text"
+                            id="editar_nombre"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Apellido</label>
+                        <input
+                            type="text"
+                            id="editar_apellido"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Documento</label>
+                        <input
+                            type="text"
+                            id="editar_documento"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Correo</label>
+                        <input
+                            type="email"
+                            id="editar_correo"
+                            class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input
+                            type="text"
+                            id="editar_telefono"
+                            class="form-control"
+                            required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-warning"
+                    onclick="guardarEdicion()">
+                    Guardar cambios
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
 </body>
 </html>

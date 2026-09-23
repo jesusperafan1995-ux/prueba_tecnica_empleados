@@ -36,6 +36,7 @@
 <script>
 
 const empleadoId = "{{ empleado_id }}";
+let empleadoActual = null;
 
 async function cargarEmpleado() {
 
@@ -47,30 +48,41 @@ async function cargarEmpleado() {
             throw new Error("No se pudo obtener el empleado.");
         }
 
-        const empleado = await response.json();
+        empleadoActual = await response.json();
 
         document.getElementById("empleado").innerHTML = `
             <div class="card-body">
 
                 <h3 class="card-title mb-4">
-                    ${empleado.nombre} ${empleado.apellido}
+                    ${empleadoActual.nombre} ${empleadoActual.apellido}
                 </h3>
 
                 <p>
-                    <strong>ID:</strong> ${empleado.id}
+                    <strong>ID:</strong> ${empleadoActual.id}
                 </p>
 
                 <p>
-                    <strong>Documento:</strong> ${empleado.documento}
+                    <strong>Documento:</strong> ${empleadoActual.documento}
                 </p>
 
                 <p>
-                    <strong>Correo:</strong> ${empleado.correo}
+                    <strong>Correo:</strong> ${empleadoActual.correo}
                 </p>
 
                 <p>
-                    <strong>Teléfono:</strong> ${empleado.telefono}
+                    <strong>Teléfono:</strong> ${empleadoActual.telefono}
                 </p>
+                <div class="mt-4">
+                    <button class="btn btn-primary" onclick="mostrarFormulario()">
+                        Editar empleado
+                    </button>
+                </div>
+
+                <div class="mt-2">
+                    <button class="btn btn-danger" onclick="eliminarEmpleado()">
+                        Eliminar empleado
+                    </button>
+                </div>
 
             </div>
         `;
@@ -87,6 +99,220 @@ async function cargarEmpleado() {
 }
 
 cargarEmpleado();
+
+function mostrarFormulario() {
+
+    document.getElementById("empleado").innerHTML = `
+        <div class="card-body">
+
+            <h3 class="card-title mb-4">
+                Editar empleado
+            </h3>
+
+            <form onsubmit="actualizarEmpleado(event)">
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input
+                        type="text"
+                        id="nombre"
+                        class="form-control"
+                        value="${empleadoActual.nombre}"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Apellido</label>
+                    <input
+                        type="text"
+                        id="apellido"
+                        class="form-control"
+                        value="${empleadoActual.apellido}"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Documento</label>
+                    <input
+                        type="text"
+                        id="documento"
+                        class="form-control"
+                        value="${empleadoActual.documento}"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Correo</label>
+                    <input
+                        type="email"
+                        id="correo"
+                        class="form-control"
+                        value="${empleadoActual.correo}"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input
+                        type="text"
+                        id="telefono"
+                        class="form-control"
+                        value="${empleadoActual.telefono}"
+                        required
+                    >
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-warning"
+                    onclick="actualizarEmpleado()">
+                    Guardar cambios
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="cargarEmpleado()"
+                >
+                    Cancelar
+                </button>
+
+
+
+            </form>
+
+        </div>
+    `;
+}
+
+async function actualizarEmpleado(event) {
+
+    event.preventDefault();
+
+    const datosActualizados = {
+        nombre: document.getElementById("nombre").value,
+        apellido: document.getElementById("apellido").value,
+        documento: document.getElementById("documento").value,
+        correo: document.getElementById("correo").value,
+        telefono: document.getElementById("telefono").value
+    };
+
+    try {
+
+        const response = await fetch(`/api/empleados/${empleadoId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datosActualizados)
+        });
+
+        const resultado = await response.json();
+
+        if (!response.ok) {
+            throw new Error(resultado.error || "No se pudo actualizar el empleado.");
+        }
+
+        document.getElementById("mensaje").innerHTML = `
+            <div class="alert alert-success">
+                ${resultado.mensaje}
+            </div>
+        `;
+
+        cargarEmpleado();
+
+    } catch (error) {
+
+        document.getElementById("mensaje").innerHTML = `
+            <div class="alert alert-danger">
+                ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function eliminarEmpleado() {
+
+    const confirmar = confirm(
+        "¿Realmente desea eliminar el registro?"
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+
+    const response = await fetch(`/api/empleados/${empleadoId}/`, {
+        method: "DELETE"
+    });
+
+    const resultado = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            resultado.error || "No se pudo eliminar el empleado."
+        );
+    }
+
+    document.getElementById("mensaje").innerHTML = `
+        <div class="alert alert-success">
+            ${resultado.mensaje}
+        </div>
+    `;
+
+    setTimeout(() => {
+        window.location.href = "/empleados/";
+    }, 1000);
+
+    } catch (error) {
+
+        document.getElementById("mensaje").innerHTML = `
+            <div class="alert alert-danger">
+                ${error.message}
+            </div>
+        `;
+
+    }
+}
+
+async function actualizarEmpleado() {
+
+    const datos = {
+        nombre: document.getElementById("nombre").value,
+        apellido: document.getElementById("apellido").value,
+        documento: document.getElementById("documento").value,
+        correo: document.getElementById("correo").value,
+        telefono: document.getElementById("telefono").value
+    };
+
+    const response = await fetch(
+        `/api/empleados/${empleadoId}/`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        }
+    );
+
+    const resultado = await response.json();
+
+    if (!response.ok) {
+        console.error(resultado);
+        alert("No fue posible actualizar el empleado.");
+        return;
+    }
+
+    alert("Empleado actualizado correctamente.");
+
+    window.location.href = "/empleados/";
+}
 
 </script>
 
