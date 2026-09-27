@@ -196,7 +196,7 @@ def detalle_empleado(request, id):
         else:
 
             return JsonResponse(
-                {'error': 'Método no permitido'},
+                {'error': 'Metodo no permitido'},
                 status=405
             )
 
@@ -217,7 +217,7 @@ def crear_empleado(request):
 
     if request.method != 'POST':
         return JsonResponse(
-            {'error': 'Método no permitido'},
+            {'error': 'Metodo no permitido'},
             status=405
         )
 

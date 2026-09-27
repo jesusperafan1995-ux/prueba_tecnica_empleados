@@ -38,20 +38,25 @@
                         <label class="form-label">Nombre</label>
                         <input
                             type="text"
-                            id="nombre"
                             class="form-control"
+                            id="crear_nombre"
                             required
-                        >
+                            minlength="2"
+                            maxlength="100">
+                        <div class="invalid-feedback">
+                            Ingresa un nombre válido.
+                        </div>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Apellido</label>
-                        <input
-                            type="text"
-                            id="apellido"
-                            class="form-control"
-                            required
-                        >
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="crear_apellido"
+                        required
+                        minlength="2"
+                        maxlength="100">
+                    <div class="invalid-feedback">
+                        Ingresa un apellido válido.
                     </div>
 
                     <div class="col-md-6 mb-3">
