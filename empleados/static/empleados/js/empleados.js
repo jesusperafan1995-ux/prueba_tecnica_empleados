@@ -354,10 +354,11 @@ async function abrirModalVer(id) {
     
     const response = await fetch( `/api/empleados/${id}/` ); 
     
-    if (!response.ok) { mostrarMensaje("No fue posible obtener el empleado.", "danger"); 
+    if (!response.ok) { 
+        mostrarMensaje("No fue posible obtener el empleado.", "danger"); 
     
-    return; 
-} 
+    return;
+    } 
 
     const empleado = await response.json(); 
     document.getElementById("ver_id").textContent = empleado.id; 
