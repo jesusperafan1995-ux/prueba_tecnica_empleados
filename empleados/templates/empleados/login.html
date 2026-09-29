@@ -88,71 +88,58 @@
 
     </div>
 
-    <script>
+<script>
 
-        document
-            .getElementById("login-form")
-            .addEventListener("submit", iniciarSesion);
+    document.getElementById("login-form").addEventListener("submit", iniciarSesion);
 
+    async function iniciarSesion(event) {
 
-        async function iniciarSesion(event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const mensaje = document.getElementById("mensaje");
 
-            const username =
-                document.getElementById("username").value;
+        try {
 
-            const password =
-                document.getElementById("password").value;
+            const response = await fetch(
+                "/api/empleados/login/",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-            const mensaje =
-                document.getElementById("mensaje");
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
 
-            try {
+            const data = await response.json();
 
-                const response = await fetch(
-                    "/api/empleados/login/",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            username: username,
-                            password: password
-                        })
-                    }
-                );
-
-                const data = await response.json();
-
-                if (!response.ok) {
-
-                    mensaje.innerHTML = `
-                        <div class="alert alert-danger">
-                            ${data.error}
-                        </div>
-                    `;
-
-                    return;
-                }
-
-                window.location.href = "/empleados/";
-
-            } catch (error) {
-
+            if (!response.ok) {
                 mensaje.innerHTML = `
                     <div class="alert alert-danger">
-                        Error al conectar con el servidor.
+                        ${data.error}
                     </div>
                 `;
+                return;
             }
+            
+            sessionStorage.setItem("usuario", data.usuario);
+
+            window.location.href = "/empleados/";
+
+        } catch (error) {
+
+            mensaje.innerHTML = `
+                <div class="alert alert-danger">
+                    Error al conectar con el servidor.
+                </div>
+            `;
         }
-
+    }
     </script>
-
 </body>
-
 </html>

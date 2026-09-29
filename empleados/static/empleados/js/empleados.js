@@ -81,6 +81,17 @@ function crearPaginacion(paginaActual, totalPaginas, tieneAnterior, tieneSiguien
 
 cargarEmpleados();
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const usuario = sessionStorage.getItem("usuario");
+
+    if (usuario) {
+        mostrarMensaje(`¡Bienvenido, ${usuario}! 👋`, "success");
+        sessionStorage.removeItem("usuario");
+    }
+    cargarEmpleados();
+});
+
 async function cerrarSesion() {
     const response = await fetch("/api/empleados/logout/", {
         method: "POST",
@@ -90,7 +101,6 @@ async function cerrarSesion() {
         window.location.href = "/empleados/login/";
     }
 }
-
 
 function validarTexto(nombreCampo, elemento) {
 
@@ -106,19 +116,6 @@ function validarTexto(nombreCampo, elemento) {
 }
 
 //modal crear empleado
-
-const modalCrearEmpleado = document.getElementById("modalCrearEmpleado");
-
-modalCrearEmpleado.addEventListener("hidden.bs.modal", function () {
-
-    const form = document.getElementById("formCrearEmpleado");
-
-    form.reset();
-
-    form.querySelectorAll(".is-invalid").forEach(function (campo) {
-        campo.classList.remove("is-invalid");
-    });
-});
 
 async function crearEmpleado() {
 
@@ -166,7 +163,6 @@ async function crearEmpleado() {
     mostrarMensaje("Empleado creado correctamente.", "success");
 
     cargarEmpleados();
-
 }
 
 const nombre = document.getElementById("crear_nombre");
@@ -227,6 +223,19 @@ telefono.addEventListener("input", function () {
     this.classList.remove("is-invalid");
 });
 
+const modalCrearEmpleado = document.getElementById("modalCrearEmpleado");
+
+modalCrearEmpleado.addEventListener("hidden.bs.modal", function () {
+
+    const form = document.getElementById("formCrearEmpleado");
+
+    form.reset();
+
+    form.querySelectorAll(".is-invalid").forEach(function (campo) {
+        campo.classList.remove("is-invalid");
+    });
+});
+
 async function abrirModalEditar(id) {
 
     const response = await fetch(
@@ -252,6 +261,64 @@ async function abrirModalEditar(id) {
 
     modal.show();
 }
+
+const editar_nombre = document.getElementById("editar_nombre");
+
+editar_nombre.addEventListener("input", function () {
+
+    if (!this.checkValidity() || !/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(this.value.trim())) {
+        this.classList.add("is-invalid");
+        return;
+    }
+
+    this.classList.remove("is-invalid");
+});
+
+const editar_apellido = document.getElementById("editar_apellido");
+
+editar_apellido.addEventListener("input", function () {
+
+    if (!this.checkValidity() || !/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(this.value.trim())) {
+        this.classList.add("is-invalid");
+        return;
+    }
+
+    this.classList.remove("is-invalid");
+});
+
+const editar_documento = document.getElementById("editar_documento");
+
+editar_documento.addEventListener("input", function () {
+    if (!this.checkValidity() || !/^\d+$/.test(this.value.trim())){
+        this.classList.add("is-invalid");
+        return;
+    }
+    this.classList.remove("is-invalid");
+});
+
+const editar_correo = document.getElementById("editar_correo");
+
+editar_correo.addEventListener("input", function () {
+
+    if (!this.checkValidity()) {
+        this.classList.add("is-invalid");
+        return;
+    }
+
+    this.classList.remove("is-invalid");
+});
+
+const editar_telefono= document.getElementById("editar_telefono");
+
+editar_telefono.addEventListener("input", function () {
+
+    if (!this.checkValidity() || !/^\d{10}$/.test(this.value.trim())) {
+        this.classList.add("is-invalid");
+        return;
+    }
+
+    this.classList.remove("is-invalid");
+});
 
 async function guardarEdicion () {
 
@@ -419,7 +486,7 @@ async function cargarEmpleados(buscar = "", pagina = 1) {
         return;
     }
 
-    const resultado = await response.json();
+    //const resultado = await response.json();
 
     tbody.innerHTML = "";
 
@@ -459,8 +526,8 @@ async function cargarEmpleados(buscar = "", pagina = 1) {
 
         resultado.empleados.forEach(empleado => {
 
-            tbody.innerHTML += `
-                <tr>
+        tbody.innerHTML += `
+            <tr class="fila-empleado" ondblclick="abrirModalVer(${empleado.id})">
                 <td>${empleado.id}</td>
                 <td>${empleado.nombre}</td>
                 <td>${empleado.apellido}</td>
@@ -471,20 +538,29 @@ async function cargarEmpleados(buscar = "", pagina = 1) {
                     <button
                         type="button"
                         class="btn btn-sm btn-primary"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Ver"
                         onclick="abrirModalVer(${empleado.id})">
-                        Ver
+                        <i class="bi bi-eye"></i>
                     </button>
                     <button
                         type="button"
                         class="btn btn-sm btn-warning"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Editar"
                         onclick="abrirModalEditar(${empleado.id})">
-                        Editar
+                        <i class="bi bi-pencil"></i>
                     </button>
                     <button
                         type="button"
                         class="btn btn-sm btn-danger"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Eliminar"
                         onclick="eliminarEmpleado(${empleado.id})">
-                        Eliminar
+                        <i class="bi bi-trash"></i>
                     </button>
                 </td>
             </tr>
@@ -508,4 +584,9 @@ async function cargarEmpleados(buscar = "", pagina = 1) {
         `;
     }
 }
+
+document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    .forEach(function (elemento) {
+        new bootstrap.Tooltip(elemento);
+});
 

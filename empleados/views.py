@@ -23,41 +23,26 @@ from .models import Empleado
 def require_login(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-
         if not request.user.is_authenticated:
             return redirect('/empleados/login/')
-        
         return view_func(request, *args, **kwargs)
-
     return wrapper
 
 #paginas
+@require_login
+def empleados_pagina(request): return render(request, 'empleados/index.html')
 
 @require_login
-def empleados_pagina(request):
-
-    return render(request, 'empleados/index.html')
+def detalle_pagina(request, id): return render(request, 'empleados/detalle.html', {'empleado_id': id})
 
 @require_login
-def detalle_pagina(request, id):
-
-    return render(request, 'empleados/detalle.html', {
-        'empleado_id': id
-    })
-
-@require_login
-def crear_pagina(request):
-
-    return render(request, 'empleados/crear.html')
+def crear_pagina(request): return render(request, 'empleados/crear.html')
 
 #api
-
 def listar_empleados(request):
-
     error = usuario_no_autenticado(request)
 
-    if error:
-        return error
+    if error: return error
 
     buscar = request.GET.get('buscar', '') 
     pagina = request.GET.get('pagina', 1)
@@ -99,12 +84,11 @@ def listar_empleados(request):
 
 @csrf_exempt
 def detalle_empleado(request, id):
-
     error = usuario_no_autenticado(request)
 
     if error:
         return error
-
+    
     try:
         empleado = Empleado.objects.get(id=id)
 
@@ -216,43 +200,33 @@ def crear_empleado(request):
         return error
 
     if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'Metodo no permitido'},
-            status=405
-        )
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405 )
 
     try:
         data = json.loads(request.body)
-        error = validar_datos_empleado(data)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'El formato JSON no es válido'}, status=400)
 
-        if error:
-            return JsonResponse({
-                'error': error
-            }, status=400)
+    error = validar_datos_empleado(data)
+    if error:
+        return JsonResponse({'error': error}, status=400)
 
-        try: 
-            validate_email(data['correo'])
-        except ValidationError:
-            return JsonResponse({
-                'error': 'El correo electrónico no es válido'
-            }, status=400)
+    try:
+        validate_email(data['correo'])
+    except ValidationError:
+        return JsonResponse({'error': 'El correo electrónico no es válido'}, status=400)
 
-        if Empleado.objects.filter(documento=data['documento']
-            ).exists():
-            return JsonResponse({
-                'error': 'Ya existe un empleado con el mismo documento'
-            }, status=400)
+    if Empleado.objects.filter(documento=data['documento']).exists():
+        return JsonResponse({'error': 'Ya existe un empleado con el mismo documento'}, status=400)
 
-        if Empleado.objects.filter(correo=data['correo']).exists():
-            return JsonResponse({
-                'error': 'Ya existe un empleado con el mismo correo'
-            }, status=400)
+    if Empleado.objects.filter(correo=data['correo']).exists():
+        return JsonResponse({'error': 'Ya existe un empleado con el mismo correo'}, status=400)
 
-        if Empleado.objects.filter(telefono=data['telefono']).exists():
-            return JsonResponse({
-                'error': 'Ya existe un empleado con el mismo teléfono'
-            }, status=400)
+    if Empleado.objects.filter(telefono=data['telefono']).exists():
+        return JsonResponse({'error': 'Ya existe un empleado con el mismo teléfono'}, status=400)
 
+
+    try:
         empleado = Empleado.objects.create(
             nombre=data['nombre'],
             apellido=data['apellido'],
@@ -260,30 +234,32 @@ def crear_empleado(request):
             correo=data['correo'],
             telefono=data['telefono']
         )
-
-        return JsonResponse({
-            'mensaje': 'Empleado creado correctamente',
-            'id': empleado.id
-        }, status=201)
-
     except Exception as e:
-        return JsonResponse({
-            'error': str(e)
-        }, status=400)
+        return JsonResponse({'error': f'Error al crear el empleado: {str(e)}'}, status=500)
 
-def validar_datos_empleado(data, empleado_id = None):
+    return JsonResponse({
+        'mensaje': 'Empleado creado correctamente',
+        'id': empleado.id
+    }, status=201)
+
+
+def validar_datos_empleado(data, empleado_id=None):
     campos = ['nombre', 'apellido', 'documento', 'correo', 'telefono']
 
     for campo in campos:
         if campo not in data or not str(data[campo]).strip():
-            return False, f'El campo {campo} es obligatorio'
+            return f'El campo {campo} es obligatorio'
 
     telefono = str(data['telefono']).strip()
-
     if not re.fullmatch(r'\d{10}', telefono):
-        return False, 'El teléfono debe contener exactamente 10 dígitos'
+        return 'El teléfono debe contener exactamente 10 dígitos'
+
+    documento = str(data['documento']).strip()
+    if not re.fullmatch(r'\d{6,15}', documento):  # ajusta el rango a tu caso
+        return 'El documento debe contener solo dígitos (entre 6 y 15)'
 
     return None
+
 
 @csrf_exempt
 def login_empleado(request):
